@@ -51,7 +51,7 @@ func NewClient(token string, proxy *url.URL) *Client {
 	client := &Client{
 		deviceID:       "",
 		proxy:          proxy,
-		headers:        headers,
+		headers:        DefaultHeaders.Clone(),
 		activeMessages: skipmap.NewString[float64](),
 		messageQueues:  skipmap.NewString[chan map[string]interface{}](),
 	}
@@ -295,7 +295,7 @@ func (c *Client) setupSession(token string) {
 	c.headers.Set("Sec-Fetch-Mode", "cors")
 	c.headers.Set("Sec-Fetch-Site", "same-origin")
 	c.headers.Set("Client-Identifier", clientIdentifier)
-	for key, value := range headers {
+	for key, value := range DefaultHeaders {
 		c.headers[key] = value
 	}
 	// Set cookie

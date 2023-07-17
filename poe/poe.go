@@ -4,10 +4,11 @@ import (
 	"errors"
 	"sync"
 	"time"
+
 	"github.com/juzeon/poe-openai-proxy/conf"
- 
-	"github.com/juzeon/poe-openai-proxy/util"
+
 	"github.com/juzeon/poe-openai-proxy/poeapi"
+	"github.com/juzeon/poe-openai-proxy/util"
 	// poeapi "github.com/lwydyby/poe-api"
 )
 
@@ -18,13 +19,14 @@ var clientIx = 0
 var correctTokens []string
 var errorTokens []string
 
-var tokenMutex  sync.Mutex
- 
+var tokenMutex sync.Mutex
 
-func createClient(token string, wg *sync.WaitGroup  ){
+func createClient(token string, wg *sync.WaitGroup) {
 	defer func() {
 		if r := recover(); r != nil {
 			util.Logger.Error("Recovered in NewClient: %v\n", r)
+			tokenMutex.Lock()
+			defer tokenMutex.Unlock()
 			errorTokens = append(errorTokens, token)
 		}
 	}()
@@ -34,8 +36,8 @@ func createClient(token string, wg *sync.WaitGroup  ){
 	if err != nil {
 		util.Logger.Error("Error creating client with token %s: %v", token, err)
 		tokenMutex.Lock()
+		defer tokenMutex.Unlock()
 		errorTokens = append(errorTokens, token)
-		tokenMutex.Unlock()
 		return
 	}
 
@@ -46,7 +48,6 @@ func createClient(token string, wg *sync.WaitGroup  ){
 
 	wg.Done()
 }
-
 
 func Setup() {
 
@@ -61,7 +62,7 @@ func Setup() {
 		}
 		seen[token] = true
 
-		go createClient(token , &wg )
+		go createClient(token, &wg)
 		// 使用匿名函数来捕获可能的 panic
 		//    func() {
 		// 	// 在延迟函数中调用 recover 来捕获 panic
@@ -139,7 +140,6 @@ func (c *Client) getContentToSend(messages []Message) string {
 	return content
 }
 
-
 func (c *Client) Stream(messages []Message, model string) (<-chan string, error) {
 	channel := make(chan string, 1024)
 	content := c.getContentToSend(messages)
@@ -167,7 +167,6 @@ func (c *Client) Stream(messages []Message, model string) (<-chan string, error)
 	return channel, nil
 }
 
-
 func (c *Client) Ask(messages []Message, model string) (*Message, error) {
 	content := c.getContentToSend(messages)
 
@@ -179,7 +178,7 @@ func (c *Client) Ask(messages []Message, model string) (*Message, error) {
 
 	resp, err := c.client.SendMessage(bot, content, true, time.Duration(conf.Conf.Timeout)*time.Second)
 	if err != nil {
-	
+
 		return nil, err
 	}
 	return &Message{
@@ -188,7 +187,6 @@ func (c *Client) Ask(messages []Message, model string) (*Message, error) {
 		Name:    "",
 	}, nil
 }
-
 
 func (c *Client) Release() {
 	clientLock.Lock()

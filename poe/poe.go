@@ -16,10 +16,9 @@ var clients []*Client
 var clientLock sync.Mutex
 var clientIx = 0
 
+var tokenMutex sync.Mutex
 var correctTokens []string
 var errorTokens []string
-
-var tokenMutex sync.Mutex
 
 func createClient(token string, wg *sync.WaitGroup) {
 	defer func() {
@@ -30,9 +29,9 @@ func createClient(token string, wg *sync.WaitGroup) {
 			errorTokens = append(errorTokens, token)
 		}
 	}()
+	defer wg.Done()
 
 	client, err := NewClient(token)
-
 	if err != nil {
 		util.Logger.Error("Error creating client with token %s: %v", token, err)
 		tokenMutex.Lock()
@@ -45,15 +44,11 @@ func createClient(token string, wg *sync.WaitGroup) {
 	correctTokens = append(correctTokens, token)
 	clients = append(clients, client)
 	tokenMutex.Unlock()
-
-	wg.Done()
 }
 
 func Setup() {
-
-	wg := sync.WaitGroup{}
 	seen := make(map[string]bool)
-	wg.Add(len(conf.Conf.Tokens))
+	wg := sync.WaitGroup{}
 
 	for _, token := range conf.Conf.Tokens {
 		if seen[token] {
@@ -64,7 +59,7 @@ func Setup() {
 
 		go createClient(token, &wg)
 		// 使用匿名函数来捕获可能的 panic
-		//    func() {
+		// func() {
 		// 	// 在延迟函数中调用 recover 来捕获 panic
 		// 	defer func() {
 		// 		if r := recover(); r != nil {
@@ -86,6 +81,7 @@ func Setup() {
 		// }()
 	}
 	wg.Wait()
+
 	// Log the correct and error tokens as lists
 	util.Logger.Info("Success tokens:", correctTokens)
 	util.Logger.Error("Error tokens:", errorTokens)

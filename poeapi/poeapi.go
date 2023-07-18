@@ -59,9 +59,11 @@ func NewClient(token string, proxy *url.URL) *Client {
 	client.setupSession(token)
 
 	// Set up the connection
-	client.setupConnection()
+	ret := client.setupConnection()
+	if !ret {
+		return nil 
+	}
 	client.connectWs()
-
 	return client
 }
 
@@ -311,9 +313,12 @@ func (c *Client) setupSession(token string) {
 	c.session.SetCookies(url, []*fhttp.Cookie{cookie})
 }
 
-func (c *Client) setupConnection() {
+func (c *Client) setupConnection() bool{
 	c.wsDomain = fmt.Sprintf("tch%d", rand.Intn(1000000))
 	c.nextData = c.getNextData(true)
+	if c.nextData == nil {
+		return false  
+	}
 	c.channel = c.getChannelData()
 	c.bots = c.getBots(false)
 	c.botNames = c.getBotNames()
@@ -331,6 +336,7 @@ func (c *Client) setupConnection() {
 	}
 
 	c.subscribe()
+	return true
 }
 
 func (c *Client) getDeviceID() string {
@@ -361,7 +367,9 @@ func (c *Client) extractFormKey(html string) string {
 func (c *Client) getNextData(overwriteVars bool) map[string]interface{} {
 	resp, err := c.requestWithRetries(http.MethodGet, homeURL, 0, nil, nil)
 	if err != nil {
-		panic(err)
+		log.Printf("get next data request failed ")
+		//panic(err)
+		return nil
 	}
 
 	defer resp.Body.Close()
@@ -387,7 +395,8 @@ func (c *Client) getNextData(overwriteVars bool) map[string]interface{} {
 	return nextData
 }
 
-func (c *Client) getBot(displayName string) map[string]interface{} {
+func (c *Client) getBot(displayName string) map[string] interface{} {
+
 	url := fmt.Sprintf("https://poe.com/_next/data/%s/%s.json", c.nextData["buildId"].(string), displayName)
 
 	resp, err := c.requestWithRetries(http.MethodGet, url, 0, nil, nil)

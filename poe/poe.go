@@ -32,7 +32,7 @@ func createClient(token string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	client, err := NewClient(token)
-	if err != nil {
+	if err != nil || client == nil  {
 		util.Logger.Error("Error creating client with token %s: %v", token, err)
 		tokenMutex.Lock()
 		defer tokenMutex.Unlock()
@@ -59,27 +59,7 @@ func Setup() {
 		seen[token] = true
 
 		go createClient(token, &wg)
-		// 使用匿名函数来捕获可能的 panic
-		// func() {
-		// 	// 在延迟函数中调用 recover 来捕获 panic
-		// 	defer func() {
-		// 		if r := recover(); r != nil {
-		// 			util.Logger.Error("Recovered in NewClient: %v\n", r)
-		// 			errorTokens = append(errorTokens, token)
-		// 		}
-		// 	}()
-
-		// 	client, err := NewClient(token)
-
-		// 	if err != nil {
-		// 		util.Logger.Error("Error creating client with token %s: %v", token, err)
-		// 		errorTokens = append(errorTokens, token)
-		// 		return
-		// 	}
-
-		// 	correctTokens = append(correctTokens, token)
-		// 	clients = append(clients, client)
-		// }()
+		 
 	}
 	wg.Wait()
 

@@ -4,10 +4,11 @@ import (
 	"errors"
 	"sync"
 	"time"
+
 	"github.com/juzeon/poe-openai-proxy/conf"
- 
-	"github.com/juzeon/poe-openai-proxy/util"
+
 	"github.com/juzeon/poe-openai-proxy/poeapi"
+	"github.com/juzeon/poe-openai-proxy/util"
 	// poeapi "github.com/lwydyby/poe-api"
 )
 
@@ -15,54 +16,71 @@ var clients []*Client
 var clientLock sync.Mutex
 var clientIx = 0
 
+var tokenMutex sync.Mutex
+var correctTokens []string
+var errorTokens []string
 
+func createClient(token string, wg *sync.WaitGroup) {
+	defer func() {
+		if r := recover(); r != nil {
+			util.Logger.Error("Recovered in NewClient: %v\n", r)
+			tokenMutex.Lock()
+			defer tokenMutex.Unlock()
+			errorTokens = append(errorTokens, token)
+		}
+	}()
+	defer wg.Done()
 
-// func removeClient(all []*Client, cli *Client) []int {
-// 	result := []*Client{}
+	client, err := NewClient(token)
+	if err != nil {
+		util.Logger.Error("Error creating client with token %s: %v", token, err)
+		tokenMutex.Lock()
+		defer tokenMutex.Unlock()
+		errorTokens = append(errorTokens, token)
+		return
+	}
 
-// 	for _, c := range all {
-// 		if cli != c {
-// 			result = append(result, c)
-// 		}
-// 	}
-
-// 	return result
-// }
-
+	tokenMutex.Lock()
+	correctTokens = append(correctTokens, token)
+	clients = append(clients, client)
+	tokenMutex.Unlock()
+}
 
 func Setup() {
 	seen := make(map[string]bool)
-	var correctTokens []string
-	var errorTokens []string
+	wg := sync.WaitGroup{}
 
 	for _, token := range conf.Conf.Tokens {
 		if seen[token] {
+			wg.Done()
 			continue
 		}
 		seen[token] = true
 
+		go createClient(token, &wg)
 		// 使用匿名函数来捕获可能的 panic
-		func() {
-			// 在延迟函数中调用 recover 来捕获 panic
-			defer func() {
-				if r := recover(); r != nil {
-					util.Logger.Error("Recovered in NewClient: %v\n", r)
-					errorTokens = append(errorTokens, token)
-				}
-			}()
+		// func() {
+		// 	// 在延迟函数中调用 recover 来捕获 panic
+		// 	defer func() {
+		// 		if r := recover(); r != nil {
+		// 			util.Logger.Error("Recovered in NewClient: %v\n", r)
+		// 			errorTokens = append(errorTokens, token)
+		// 		}
+		// 	}()
 
-			client, err := NewClient(token)
+		// 	client, err := NewClient(token)
 
-			if err != nil {
-				util.Logger.Error("Error creating client with token %s: %v", token, err)
-				errorTokens = append(errorTokens, token)
-				return
-			}
+		// 	if err != nil {
+		// 		util.Logger.Error("Error creating client with token %s: %v", token, err)
+		// 		errorTokens = append(errorTokens, token)
+		// 		return
+		// 	}
 
-			correctTokens = append(correctTokens, token)
-			clients = append(clients, client)
-		}()
+		// 	correctTokens = append(correctTokens, token)
+		// 	clients = append(clients, client)
+		// }()
 	}
+	wg.Wait()
 
 	// Log the correct and error tokens as lists
 	util.Logger.Info("Success tokens:", correctTokens)
@@ -118,7 +136,6 @@ func (c *Client) getContentToSend(messages []Message) string {
 	return content
 }
 
-
 func (c *Client) Stream(messages []Message, model string) (<-chan string, error) {
 	channel := make(chan string, 1024)
 	content := c.getContentToSend(messages)
@@ -146,7 +163,6 @@ func (c *Client) Stream(messages []Message, model string) (<-chan string, error)
 	return channel, nil
 }
 
-
 func (c *Client) Ask(messages []Message, model string) (*Message, error) {
 	content := c.getContentToSend(messages)
 
@@ -158,7 +174,7 @@ func (c *Client) Ask(messages []Message, model string) (*Message, error) {
 
 	resp, err := c.client.SendMessage(bot, content, true, time.Duration(conf.Conf.Timeout)*time.Second)
 	if err != nil {
-	
+
 		return nil, err
 	}
 	return &Message{
@@ -167,7 +183,6 @@ func (c *Client) Ask(messages []Message, model string) (*Message, error) {
 		Name:    "",
 	}, nil
 }
-
 
 func (c *Client) Release() {
 	clientLock.Lock()

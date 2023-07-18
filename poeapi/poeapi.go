@@ -393,11 +393,11 @@ func (c *Client) getBot(displayName string) map[string]interface{} {
 	resp, err := c.requestWithRetries(http.MethodGet, url, 0, nil, nil)
 	if err != nil {
 		// handle error
+		return nil 
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
-
 	var jsonData map[string]interface{}
 	err = json.Unmarshal(body, &jsonData)
 
@@ -408,6 +408,7 @@ func (c *Client) getBot(displayName string) map[string]interface{} {
 		chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
 	}
 	return chatData
+	
 }
 
 func (c *Client) getBots(downloadNextData bool) map[string]interface{} {
@@ -425,7 +426,11 @@ func (c *Client) getBots(downloadNextData bool) map[string]interface{} {
 		lock.Lock()
 		defer lock.Unlock()
 		chatData := c.getBot(bot["node"].(map[string]interface{})["displayName"].(string))
-		bots[chatData["defaultBotObject"].(map[string]interface{})["nickname"].(string)] = chatData
+		if chatData !=  nil {
+			bots[chatData["defaultBotObject"].(map[string]interface{})["nickname"].(string)] = chatData	
+		}
+		log.Printf("get bot failed ")
+		
 	}
 
 	wg.Add(len(botList))

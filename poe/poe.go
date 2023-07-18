@@ -49,6 +49,7 @@ func createClient(token string, wg *sync.WaitGroup) {
 func Setup() {
 	seen := make(map[string]bool)
 	wg := sync.WaitGroup{}
+	wg.Add(len(conf.Conf.Tokens))
 
 	for _, token := range conf.Conf.Tokens {
 		if seen[token] {

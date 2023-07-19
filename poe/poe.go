@@ -120,11 +120,17 @@ func (c *Client) getContentToSend(messages []Message) string {
 func (c *Client) Stream(messages []Message, model string) (<-chan string, error) {
 	channel := make(chan string, 1024)
 	content := c.getContentToSend(messages)
+
+	util.Logger.Info("using model ", model )
 	bot, ok := conf.Conf.Bot[model]
 	if !ok {
 		bot = "capybara"
 	}
 	util.Logger.Info("Stream using bot", bot)
+	if c.client == nil {
+		util.Logger.Error("invalid client", bot )
+		return nil , errors.New("invalid client")
+	}
 	resp, err := c.client.SendMessage(bot, content, true, time.Duration(conf.Conf.Timeout)*time.Second)
 	if err != nil {
 		return nil, err

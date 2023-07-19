@@ -17,6 +17,7 @@ type ConfigStruct struct {
 	CoolDown      int
 	Timeout       int
 	AuthKey		  string
+	Proxy         string 
 }
 
 type ModelDef struct {
@@ -71,6 +72,7 @@ func Setup() {
 	Conf.RateLimit = loadEnvVarAsInt("RATE_LIMIT", 10)
 	Conf.CoolDown = loadEnvVarAsInt("COOL_DOWN", 10)
 	Conf.Timeout = loadEnvVarAsInt("TIMEOUT", 60)
+	Conf.Proxy = loadEnvVar("proxy", "")
 
 	Conf.Bot = map[string]string{
 		"assistant":                    "capybara",

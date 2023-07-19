@@ -4,9 +4,10 @@ import (
 	"errors"
 	"sync"
 	"time"
-
+	"log"
+	"net/url"
 	"github.com/juzeon/poe-openai-proxy/conf"
-
+ 
 	"github.com/juzeon/poe-openai-proxy/poeapi"
 	"github.com/juzeon/poe-openai-proxy/util"
 	// poeapi "github.com/lwydyby/poe-api"
@@ -31,7 +32,7 @@ func createClient(token string, wg *sync.WaitGroup) {
 	}()
 	defer wg.Done()
 
-	client, err := NewClient(token)
+	client, err := NewClient(token, conf.Conf.Proxy)
 	if err != nil || client == nil  {
 		util.Logger.Error("Error creating client with token %s: %v", token, err)
 		tokenMutex.Lock()
@@ -47,6 +48,10 @@ func createClient(token string, wg *sync.WaitGroup) {
 }
 
 func Setup() {
+
+ 
+	log.Printf("load proxy is %s", conf.Conf.Proxy )
+
 	seen := make(map[string]bool)
 	wg := sync.WaitGroup{}
 	wg.Add(len(conf.Conf.Tokens))
@@ -76,11 +81,14 @@ type Client struct {
 	Lock   bool
 }
 
-func NewClient(token string) (*Client, error) {
+func NewClient(token string, proxy string ) (*Client, error) {
 	util.Logger.Info("registering client: " + token)
-	client := poeapi.NewClient(token, nil)
+	u,_ := url.Parse(proxy)
+	client := poeapi.NewClient(token,  u  )
 	return &Client{Token: token, Usage: nil, Lock: false, client: client}, nil
 }
+
+
 func (c *Client) getContentToSend(messages []Message) string {
 	leadingMap := map[string]string{
 		"system":    "Instructions",
@@ -158,6 +166,9 @@ func (c *Client) Ask(messages []Message, model string) (*Message, error) {
 		bot = "capybara"
 	}
 	util.Logger.Info("Ask using bot", bot)
+	if c == nil {
+		return nil , errors.New("nil client ")
+	}
 
 	resp, err := c.client.SendMessage(bot, content, true, time.Duration(conf.Conf.Timeout)*time.Second)
 	if err != nil {

@@ -252,11 +252,12 @@ func (c *Client) requestWithRetries(method string, url string, attempts int, dat
 			req.Header[key] = value
 		}
 		//add default headers 
-		for key, value := range DefaultHeaders {
-			req.Header[key] = value
-		}
+		// for key, value := range DefaultHeaders {
+		// 	req.Header[key] = value
+		// }
+		//   log.Printf("headers is %v", req.Header)
+
 	}
-	log.Printf("headers is %v", req.Header)
 
 	for i := 0; i < attempts; i++ {
 		resp, err := client.Do(req)
@@ -320,9 +321,10 @@ func (c *Client) setupSession(token string) {
 	// Set cookie
 	cookie := &fhttp.Cookie{
 		Name:   "p-b",
-		Value:  token,
+		Value:  token, 
 		Domain: "poe.com",
 	}
+
 	url, err := url.Parse(homeURL)
 	if err != nil {
 		panic(err)

@@ -65,6 +65,7 @@ func Setup() {
 
 		go createClient(token, &wg)
 		 
+		time.Sleep(1) 
 	}
 	wg.Wait()
 

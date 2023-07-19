@@ -46,6 +46,7 @@ func Setup(engine *gin.Engine) {
 		}
 		client, err := poe.GetClient()
 		if err != nil {
+			
 			c.JSON(500, err)
 			return
 		}

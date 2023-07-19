@@ -398,6 +398,7 @@ func (c *Client) getNextData(overwriteVars bool) map[string]interface{} {
 func (c *Client) getBot(displayName string) map[string] interface{} {
 
 	url := fmt.Sprintf("https://poe.com/_next/data/%s/%s.json", c.nextData["buildId"].(string), displayName)
+    log.Printf("url %s", url)
 
 	resp, err := c.requestWithRetries(http.MethodGet, url, 0, nil, nil)
 	if err != nil {

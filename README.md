@@ -145,9 +145,9 @@ curl --location 'https://poe.aivvm.com/v1/chat/completions' \
 
 | 模型名称              | poe模型名称  |
 | -------------------- | ---------- |
-| sage                 | capybara   |
-| gpt-3.5-turbo        | capybara   |
-| gpt-3.5-turbo-0301   | capybara   |
+| assistant            | capybara   |
+| gpt-3.5-turbo        | chinchilla |
+| gpt-3.5-turbo-0301   | chinchilla |
 | gpt-3.5-turbo-0613   | chinchilla |
 | gpt-3.5-turbo-16k    | agouti     |
 | gpt-3.5-turbo-16k-0613 | agouti    |

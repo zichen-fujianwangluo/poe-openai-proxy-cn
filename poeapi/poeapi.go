@@ -433,12 +433,12 @@ func (c *Client) getBot(displayName string) map[string] interface{} {
 	err = json.Unmarshal(body, &jsonData)
 
 	var chatData map[string]interface{}
-	// if containKey("payload", jsonData["pageProps"].(map[string]interface{})) {
-	// 	chatData = jsonData["pageProps"].(map[string]interface{})["payload"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
-	// } else {
-	// 	chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
-	// }
-	chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
+	if containKey("payload", jsonData["pageProps"].(map[string]interface{})) {
+		chatData = jsonData["pageProps"].(map[string]interface{})["payload"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
+	} else {
+		chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
+	}
+	// chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
 
 	return chatData
 	

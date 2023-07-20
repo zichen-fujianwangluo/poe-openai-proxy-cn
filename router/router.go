@@ -14,6 +14,11 @@ import (
 )
 
 func Setup(engine *gin.Engine) {
+
+
+	//engine.ForwardedByClientIP = true
+	//engine.SetTrustedProxies([]string{"*"})
+
 	getModels := func(c *gin.Context) {
 		SetCORS(c)
 		if c.Request.Header.Get("Authorization") != "Bearer " + conf.Conf.AuthKey {

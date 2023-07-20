@@ -308,12 +308,20 @@ func (c *Client) setupSession(token string) {
 	}
 
 	// Update session headers
+	// c.headers.Set("Referrer", "https://poe.com/")
+	// c.headers.Set("Origin", "https://poe.com")
+	// c.headers.Set("Host", "poe.com")
+	// c.headers.Set("Sec-Fetch-Dest", "empty")
+	// c.headers.Set("Sec-Fetch-Mode", "cors")
+	// c.headers.Set("Sec-Fetch-Site", "same-origin")
+
 	c.headers.Set("Referrer", "https://poe.com/")
 	c.headers.Set("Origin", "https://poe.com")
 	c.headers.Set("Host", "poe.com")
-	c.headers.Set("Sec-Fetch-Dest", "empty")
-	c.headers.Set("Sec-Fetch-Mode", "cors")
+	c.headers.Set("Sec-Fetch-Dest", "document")
+	c.headers.Set("Sec-Fetch-Mode", "navigate")
 	c.headers.Set("Sec-Fetch-Site", "same-origin")
+
 	c.headers.Set("Client-Identifier", clientIdentifier)
 	for key, value := range DefaultHeaders {
 		c.headers[key] = value

@@ -85,9 +85,11 @@ type Client struct {
 func NewClient(token string, proxy string ) (*Client, error) {
 	util.Logger.Info("registering client: " + token + " proxy is " + proxy )
 	var proxyUrl * url.URL = nil 
-	if proxy == ""  {
+	if len(proxy ) == 0   {
 		proxyUrl,_ = url.Parse(proxy)
-	} 
+	}else {
+		log.Printf("using proxy %s", proxy )
+	}
 	client := poeapi.NewClient(token, proxyUrl  )
 	return &Client{Token: token, Usage: nil, Lock: false, client: client}, nil
 }

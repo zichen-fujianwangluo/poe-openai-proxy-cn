@@ -308,21 +308,14 @@ func (c *Client) setupSession(token string) {
 	}
 
 	// Update session headers
-	// c.headers.Set("Referrer", "https://poe.com/")
-	// c.headers.Set("Origin", "https://poe.com")
-	// c.headers.Set("Host", "poe.com")
-	// c.headers.Set("Sec-Fetch-Dest", "empty")
-	// c.headers.Set("Sec-Fetch-Mode", "cors")
-	// c.headers.Set("Sec-Fetch-Site", "same-origin")
-
-	c.headers.Set("Referrer", "https://poe.com/")
-	c.headers.Set("Origin", "https://poe.com")
-	c.headers.Set("Host", "poe.com")
+	c.headers.Set("Cache-Control", "max-age=0")
+	c.headers.Set("Sec-Ch-Ua", "Microsoft Edge, v=\"117\", Not;A=Brand, v=\"8\", Chromium, v=\"117\"")
+	c.headers.Set("Sec-Ch-Ua-Mobile", "0")
 	c.headers.Set("Sec-Fetch-Dest", "document")
 	c.headers.Set("Sec-Fetch-Mode", "navigate")
 	c.headers.Set("Sec-Fetch-Site", "same-origin")
-
-	c.headers.Set("Client-Identifier", clientIdentifier)
+	c.headers.Set("Sec-Fetch-User", "?1")
+	// c.headers.Set("Client-Identifier", clientIdentifier)
 	for key, value := range DefaultHeaders {
 		c.headers[key] = value
 	}
@@ -445,7 +438,8 @@ func (c *Client) getBot(displayName string) map[string] interface{} {
 	} else {
 		chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
 	}
-	 
+	// chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
+
 	return chatData
 	
 }

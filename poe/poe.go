@@ -87,9 +87,7 @@ func NewClient(token string, proxy string ) (*Client, error) {
 	var proxyUrl * url.URL = nil 
 	if proxy == ""  {
 		proxyUrl,_ = url.Parse(proxy)
-	}
-	
-
+	} 
 	client := poeapi.NewClient(token, proxyUrl  )
 	return &Client{Token: token, Usage: nil, Lock: false, client: client}, nil
 }

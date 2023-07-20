@@ -72,7 +72,7 @@ func Setup() {
 	Conf.RateLimit = loadEnvVarAsInt("RATE_LIMIT", 10)
 	Conf.CoolDown = loadEnvVarAsInt("COOL_DOWN", 10)
 	Conf.Timeout = loadEnvVarAsInt("TIMEOUT", 60)
-	Conf.Proxy = loadEnvVar("proxy", "")
+	Conf.Proxy = loadEnvVar("PROXY", "")
 
 	Conf.Bot = map[string]string{
 		"assistant":                    "capybara",

@@ -103,6 +103,8 @@ chmod +x poe-openai-proxy
 | `RATE_LIMIT`          | `10`       | 速率[默认为1分钟内每个令牌调用10个api]    |
 | `COOL_DOWN`           | `10`       | 冷却令牌[#冷却几秒钟。同一个令牌在n秒内不能多次使用] |
 | `TIMEOUT`             | `60`       | 超时  |
+| `PROXY`             | `选填`       | poe的代理 `http://127.0.0.1:8989`,默认为空，不走代理  |
+
 
 > 注意: `Railway` 修改环境变量会重新 `Deploy`
 
@@ -145,9 +147,9 @@ curl --location 'https://poe.aivvm.com/v1/chat/completions' \
 
 | 模型名称              | poe模型名称  |
 | -------------------- | ---------- |
-| sage                 | capybara   |
-| gpt-3.5-turbo        | capybara   |
-| gpt-3.5-turbo-0301   | capybara   |
+| assistant            | capybara   |
+| gpt-3.5-turbo        | chinchilla |
+| gpt-3.5-turbo-0301   | chinchilla |
 | gpt-3.5-turbo-0613   | chinchilla |
 | gpt-3.5-turbo-16k    | agouti     |
 | gpt-3.5-turbo-16k-0613 | agouti    |

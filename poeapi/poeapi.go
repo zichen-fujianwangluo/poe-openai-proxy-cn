@@ -48,10 +48,11 @@ type Client struct {
 
 func NewClient(token string, proxy *url.URL) *Client {
 	// Initialize the client
+	log.Printf("new client %s , proxy %v", token, proxy )
 	client := &Client{
 		deviceID:       "",
 		proxy:          proxy,
-		headers:        headers,
+		headers:        DefaultHeaders.Clone(),
 		activeMessages: skipmap.NewString[float64](),
 		messageQueues:  skipmap.NewString[chan map[string]interface{}](),
 	}
@@ -59,9 +60,11 @@ func NewClient(token string, proxy *url.URL) *Client {
 	client.setupSession(token)
 
 	// Set up the connection
-	client.setupConnection()
+	ret := client.setupConnection()
+	if !ret {
+		return nil 
+	}
 	client.connectWs()
-
 	return client
 }
 
@@ -71,6 +74,12 @@ func (c *Client) GetBots() map[string]string {
 
 func (c *Client) SendMessage(chatbot, message string, withChatBreak bool, timeout time.Duration) (<-chan map[string]interface{}, error) {
 	// 支持通过name获取chatbot 而不需要拿到poe后端需要的name
+
+	log.Printf("bot name %s\n", chatbot)
+	if c == nil ||  c.botNames == nil {
+		log.Printf("bot names is empty")
+		return nil, nil 
+	}
 	if name, ok := c.botNames[chatbot]; ok {
 		chatbot = name
 	}
@@ -85,7 +94,7 @@ func (c *Client) SendMessage(chatbot, message string, withChatBreak bool, timeou
 		}
 	}
 
-	log.Printf("Sending message to %s: %s", chatbot, message)
+	logger.Printf("Sending message to %s: %s", chatbot, message)
 
 	if !c.wsConnected {
 		c.disconnectWs()
@@ -128,7 +137,7 @@ func (c *Client) SendChatBreak(chatbot string) (map[string]interface{}, error) {
 }
 
 func (c *Client) GetMessageHistory(chatbot string, count int, cursor interface{}) ([]map[string]interface{}, error) {
-	log.Printf("Downloading %d messages from %s", count, chatbot)
+	logger.Printf("Downloading %d messages from %s", count, chatbot)
 
 	messages := []map[string]interface{}{}
 
@@ -177,7 +186,7 @@ func (c *Client) GetMessageHistory(chatbot string, count int, cursor interface{}
 }
 
 func (c *Client) DeleteMessage(messageIDs []int) error {
-	log.Printf("Deleting messages: %v", messageIDs)
+	logger.Printf("Deleting messages: %v", messageIDs)
 	c.sendQuery("DeleteMessageMutation", map[string]interface{}{
 		"messageIds": messageIDs,
 	}, 0)
@@ -185,7 +194,7 @@ func (c *Client) DeleteMessage(messageIDs []int) error {
 }
 
 func (c *Client) PurgeConversation(chatbot string, count int) error {
-	log.Printf("Purging messages from %s", chatbot)
+	logger.Printf("Purging messages from %s", chatbot)
 	lastMessages, err := c.GetMessageHistory(chatbot, 50, nil)
 	if err != nil {
 		return err
@@ -219,11 +228,12 @@ func (c *Client) PurgeConversation(chatbot string, count int) error {
 		reverseSlice(lastMessages)
 	}
 
-	log.Printf("No more messages left to delete.")
+	logger.Printf("No more messages left to delete.")
 	return nil
 }
 
 func (c *Client) requestWithRetries(method string, url string, attempts int, data []byte, headers map[string][]string) (*fhttp.Response, error) {
+	log.Printf("request url is %s ", url )
 	if attempts == 0 {
 		attempts = 10
 	}
@@ -241,16 +251,26 @@ func (c *Client) requestWithRetries(method string, url string, attempts int, dat
 		for key, value := range headers {
 			req.Header[key] = value
 		}
+		//add default headers 
+		// for key, value := range DefaultHeaders {
+		// 	req.Header[key] = value
+		// }
+		//   log.Printf("headers is %v", req.Header)
+
 	}
 
 	for i := 0; i < attempts; i++ {
 		resp, err := client.Do(req)
 		if err != nil {
+		 
+			log.Print(err)
+
 			return nil, err
 		}
 		if resp.StatusCode == http.StatusOK {
 			return resp, nil
 		}
+
 		if resp.StatusCode == http.StatusTemporaryRedirect {
 			body, _ := io.ReadAll(resp.Body)
 			if strings.HasPrefix(resp.Header.Get("Location"), "/login") {
@@ -284,26 +304,28 @@ func (c *Client) setupSession(token string) {
 
 	if c.proxy != nil {
 		c.session.SetProxy(c.proxy.String())
-		log.Printf("Proxy enabled: %s\n", c.proxy.String())
+		logger.Printf("Proxy enabled: %v\n", c.proxy)
 	}
 
 	// Update session headers
-	c.headers.Set("Referrer", "https://poe.com/")
-	c.headers.Set("Origin", "https://poe.com")
-	c.headers.Set("Host", "poe.com")
-	c.headers.Set("Sec-Fetch-Dest", "empty")
-	c.headers.Set("Sec-Fetch-Mode", "cors")
+	c.headers.Set("Cache-Control", "max-age=0")
+	c.headers.Set("Sec-Ch-Ua", "Microsoft Edge, v=\"117\", Not;A=Brand, v=\"8\", Chromium, v=\"117\"")
+	c.headers.Set("Sec-Ch-Ua-Mobile", "0")
+	c.headers.Set("Sec-Fetch-Dest", "document")
+	c.headers.Set("Sec-Fetch-Mode", "navigate")
 	c.headers.Set("Sec-Fetch-Site", "same-origin")
-	c.headers.Set("Client-Identifier", clientIdentifier)
-	for key, value := range headers {
+	c.headers.Set("Sec-Fetch-User", "?1")
+	// c.headers.Set("Client-Identifier", clientIdentifier)
+	for key, value := range DefaultHeaders {
 		c.headers[key] = value
 	}
 	// Set cookie
 	cookie := &fhttp.Cookie{
 		Name:   "p-b",
-		Value:  token,
+		Value:  token, 
 		Domain: "poe.com",
 	}
+
 	url, err := url.Parse(homeURL)
 	if err != nil {
 		panic(err)
@@ -311,9 +333,13 @@ func (c *Client) setupSession(token string) {
 	c.session.SetCookies(url, []*fhttp.Cookie{cookie})
 }
 
-func (c *Client) setupConnection() {
+func (c *Client) setupConnection() bool{
 	c.wsDomain = fmt.Sprintf("tch%d", rand.Intn(1000000))
 	c.nextData = c.getNextData(true)
+	if c.nextData == nil {
+		
+		return false  
+	}
 	c.channel = c.getChannelData()
 	c.bots = c.getBots(false)
 	c.botNames = c.getBotNames()
@@ -331,6 +357,7 @@ func (c *Client) setupConnection() {
 	}
 
 	c.subscribe()
+	return true
 }
 
 func (c *Client) getDeviceID() string {
@@ -361,7 +388,9 @@ func (c *Client) extractFormKey(html string) string {
 func (c *Client) getNextData(overwriteVars bool) map[string]interface{} {
 	resp, err := c.requestWithRetries(http.MethodGet, homeURL, 0, nil, nil)
 	if err != nil {
-		panic(err)
+		log.Printf("get next data request failed %v ", err )
+		//panic(err)
+		return nil
 	}
 
 	defer resp.Body.Close()
@@ -387,17 +416,19 @@ func (c *Client) getNextData(overwriteVars bool) map[string]interface{} {
 	return nextData
 }
 
-func (c *Client) getBot(displayName string) map[string]interface{} {
-	url := fmt.Sprintf("https://poe.com/_next/data/%s/%s.json", c.nextData["buildId"].(string), displayName)
+func (c *Client) getBot(displayName string) map[string] interface{} {
 
+	url := fmt.Sprintf("https://poe.com/_next/data/%s/%s.json", c.nextData["buildId"].(string), displayName)
+		
 	resp, err := c.requestWithRetries(http.MethodGet, url, 0, nil, nil)
 	if err != nil {
 		// handle error
+		log.Printf("request  failed %v", err )
+		return nil 
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
-
 	var jsonData map[string]interface{}
 	err = json.Unmarshal(body, &jsonData)
 
@@ -407,7 +438,10 @@ func (c *Client) getBot(displayName string) map[string]interface{} {
 	} else {
 		chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
 	}
+	// chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
+
 	return chatData
+	
 }
 
 func (c *Client) getBots(downloadNextData bool) map[string]interface{} {
@@ -424,8 +458,10 @@ func (c *Client) getBots(downloadNextData bool) map[string]interface{} {
 		defer wg.Done()
 		lock.Lock()
 		defer lock.Unlock()
-		chatData := c.getBot(bot["node"].(map[string]interface{})["displayName"].(string))
-		bots[chatData["defaultBotObject"].(map[string]interface{})["nickname"].(string)] = chatData
+		chatData := c.getBot(bot["node"].(map[string]interface{})["handle"].(string))
+		if chatData !=  nil {
+			bots[chatData["defaultBotObject"].(map[string]interface{})["nickname"].(string)] = chatData	
+		} 
 	}
 
 	wg.Add(len(botList))

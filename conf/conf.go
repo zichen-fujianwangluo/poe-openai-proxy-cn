@@ -17,6 +17,7 @@ type ConfigStruct struct {
 	CoolDown      int
 	Timeout       int
 	AuthKey		  string
+	Proxy         string 
 }
 
 type ModelDef struct {
@@ -67,15 +68,16 @@ func Setup() {
 	Conf.Port = loadEnvVarAsInt("PORT", 8080)
 	Conf.Tokens = loadEnvVarAsSlice("TOKENS")
 	Conf.AuthKey = loadEnvVarAsSlice("AuthKey")[0]
-	Conf.SimulateRoles = loadEnvVarAsInt("SIMULATE_ROLES", 2)
+	Conf.SimulateRoles = loadEnvVarAsInt("SIMULATE_ROLES", 0)
 	Conf.RateLimit = loadEnvVarAsInt("RATE_LIMIT", 10)
-	Conf.CoolDown = loadEnvVarAsInt("COOL_DOWN", 5)
+	Conf.CoolDown = loadEnvVarAsInt("COOL_DOWN", 10)
 	Conf.Timeout = loadEnvVarAsInt("TIMEOUT", 60)
+	Conf.Proxy = loadEnvVar("PROXY", "")
 
 	Conf.Bot = map[string]string{
-		"sage":                         "capybara",
-		"gpt-3.5-turbo":				"capybara",
-		"gpt-3.5-turbo-0301":			"capybara",
+		"assistant":                    "capybara",
+		"gpt-3.5-turbo":				"chinchilla",
+		"gpt-3.5-turbo-0301":			"chinchilla",
 		"gpt-3.5-turbo-0613":           "chinchilla",
 		"gpt-3.5-turbo-16k":			"agouti",
 		"gpt-3.5-turbo-16k-0613":       "agouti",

@@ -304,7 +304,7 @@ func (c *Client) setupSession(token string) {
 
 	if c.proxy != nil {
 		c.session.SetProxy(c.proxy.String())
-		logger.Printf("Proxy enabled: %s\n", c.proxy.String())
+		logger.Printf("Proxy enabled: %v\n", c.proxy)
 	}
 
 	// Update session headers

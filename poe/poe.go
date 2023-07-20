@@ -83,7 +83,7 @@ type Client struct {
 }
 
 func NewClient(token string, proxy string ) (*Client, error) {
-	util.Logger.Info("registering client: " + token)
+	util.Logger.Info("registering client: " + token + " proxy is " + proxy )
 	var proxyUrl * url.URL = nil 
 	if proxy == ""  {
 		proxyUrl,_ = url.Parse(proxy)

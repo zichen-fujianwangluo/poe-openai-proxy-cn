@@ -48,6 +48,7 @@ type Client struct {
 
 func NewClient(token string, proxy *url.URL) *Client {
 	// Initialize the client
+	log.Printf("new client %s , proxy %v", token, proxy )
 	client := &Client{
 		deviceID:       "",
 		proxy:          proxy,
@@ -73,6 +74,12 @@ func (c *Client) GetBots() map[string]string {
 
 func (c *Client) SendMessage(chatbot, message string, withChatBreak bool, timeout time.Duration) (<-chan map[string]interface{}, error) {
 	// 支持通过name获取chatbot 而不需要拿到poe后端需要的name
+
+	log.Printf("bot name %s\n", chatbot)
+	if c == nil ||  c.botNames == nil {
+		log.Printf("bot names is empty")
+		return nil, nil 
+	}
 	if name, ok := c.botNames[chatbot]; ok {
 		chatbot = name
 	}
@@ -226,6 +233,7 @@ func (c *Client) PurgeConversation(chatbot string, count int) error {
 }
 
 func (c *Client) requestWithRetries(method string, url string, attempts int, data []byte, headers map[string][]string) (*fhttp.Response, error) {
+	log.Printf("request url is %s ", url )
 	if attempts == 0 {
 		attempts = 10
 	}
@@ -243,16 +251,26 @@ func (c *Client) requestWithRetries(method string, url string, attempts int, dat
 		for key, value := range headers {
 			req.Header[key] = value
 		}
+		//add default headers 
+		// for key, value := range DefaultHeaders {
+		// 	req.Header[key] = value
+		// }
+		//   log.Printf("headers is %v", req.Header)
+
 	}
 
 	for i := 0; i < attempts; i++ {
 		resp, err := client.Do(req)
 		if err != nil {
+		 
+			log.Print(err)
+
 			return nil, err
 		}
 		if resp.StatusCode == http.StatusOK {
 			return resp, nil
 		}
+
 		if resp.StatusCode == http.StatusTemporaryRedirect {
 			body, _ := io.ReadAll(resp.Body)
 			if strings.HasPrefix(resp.Header.Get("Location"), "/login") {
@@ -303,9 +321,10 @@ func (c *Client) setupSession(token string) {
 	// Set cookie
 	cookie := &fhttp.Cookie{
 		Name:   "p-b",
-		Value:  token,
+		Value:  token, 
 		Domain: "poe.com",
 	}
+
 	url, err := url.Parse(homeURL)
 	if err != nil {
 		panic(err)
@@ -317,6 +336,7 @@ func (c *Client) setupConnection() bool{
 	c.wsDomain = fmt.Sprintf("tch%d", rand.Intn(1000000))
 	c.nextData = c.getNextData(true)
 	if c.nextData == nil {
+		
 		return false  
 	}
 	c.channel = c.getChannelData()
@@ -367,7 +387,7 @@ func (c *Client) extractFormKey(html string) string {
 func (c *Client) getNextData(overwriteVars bool) map[string]interface{} {
 	resp, err := c.requestWithRetries(http.MethodGet, homeURL, 0, nil, nil)
 	if err != nil {
-		log.Printf("get next data request failed ")
+		log.Printf("get next data request failed %v ", err )
 		//panic(err)
 		return nil
 	}
@@ -398,11 +418,11 @@ func (c *Client) getNextData(overwriteVars bool) map[string]interface{} {
 func (c *Client) getBot(displayName string) map[string] interface{} {
 
 	url := fmt.Sprintf("https://poe.com/_next/data/%s/%s.json", c.nextData["buildId"].(string), displayName)
-    log.Printf("url %s", url)
-
+		
 	resp, err := c.requestWithRetries(http.MethodGet, url, 0, nil, nil)
 	if err != nil {
 		// handle error
+		log.Printf("request  failed %v", err )
 		return nil 
 	}
 
@@ -417,6 +437,7 @@ func (c *Client) getBot(displayName string) map[string] interface{} {
 	} else {
 		chatData = jsonData["pageProps"].(map[string]interface{})["data"].(map[string]interface{})["chatOfBotHandle"].(map[string]interface{})
 	}
+	 
 	return chatData
 	
 }
@@ -438,9 +459,7 @@ func (c *Client) getBots(downloadNextData bool) map[string]interface{} {
 		chatData := c.getBot(bot["node"].(map[string]interface{})["handle"].(string))
 		if chatData !=  nil {
 			bots[chatData["defaultBotObject"].(map[string]interface{})["nickname"].(string)] = chatData	
-		}
-		log.Printf("get bot failed ")
-		
+		} 
 	}
 
 	wg.Add(len(botList))

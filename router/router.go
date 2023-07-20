@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"log"
 	"time"
 	"github.com/juzeon/poe-openai-proxy/conf"
 	"github.com/juzeon/poe-openai-proxy/poe"
@@ -46,6 +47,7 @@ func Setup(engine *gin.Engine) {
 		}
 		client, err := poe.GetClient()
 		if err != nil {
+			log.Printf("client error: %v", err)
 			c.JSON(500, err)
 			return
 		}

@@ -94,7 +94,7 @@ func (c *Client) SendMessage(chatbot, message string, withChatBreak bool, timeou
 		}
 	}
 
-	log.Printf("Sending message to %s: %s", chatbot, message)
+	logger.Printf("Sending message to %s: %s", chatbot, message)
 
 	if !c.wsConnected {
 		c.disconnectWs()
@@ -137,7 +137,7 @@ func (c *Client) SendChatBreak(chatbot string) (map[string]interface{}, error) {
 }
 
 func (c *Client) GetMessageHistory(chatbot string, count int, cursor interface{}) ([]map[string]interface{}, error) {
-	log.Printf("Downloading %d messages from %s", count, chatbot)
+	logger.Printf("Downloading %d messages from %s", count, chatbot)
 
 	messages := []map[string]interface{}{}
 
@@ -186,7 +186,7 @@ func (c *Client) GetMessageHistory(chatbot string, count int, cursor interface{}
 }
 
 func (c *Client) DeleteMessage(messageIDs []int) error {
-	log.Printf("Deleting messages: %v", messageIDs)
+	logger.Printf("Deleting messages: %v", messageIDs)
 	c.sendQuery("DeleteMessageMutation", map[string]interface{}{
 		"messageIds": messageIDs,
 	}, 0)
@@ -194,7 +194,7 @@ func (c *Client) DeleteMessage(messageIDs []int) error {
 }
 
 func (c *Client) PurgeConversation(chatbot string, count int) error {
-	log.Printf("Purging messages from %s", chatbot)
+	logger.Printf("Purging messages from %s", chatbot)
 	lastMessages, err := c.GetMessageHistory(chatbot, 50, nil)
 	if err != nil {
 		return err
@@ -228,7 +228,7 @@ func (c *Client) PurgeConversation(chatbot string, count int) error {
 		reverseSlice(lastMessages)
 	}
 
-	log.Printf("No more messages left to delete.")
+	logger.Printf("No more messages left to delete.")
 	return nil
 }
 
@@ -304,7 +304,7 @@ func (c *Client) setupSession(token string) {
 
 	if c.proxy != nil {
 		c.session.SetProxy(c.proxy.String())
-		log.Printf("Proxy enabled: %s\n", c.proxy.String())
+		logger.Printf("Proxy enabled: %s\n", c.proxy.String())
 	}
 
 	// Update session headers
@@ -464,7 +464,7 @@ func (c *Client) getBots(downloadNextData bool) map[string]interface{} {
 		defer wg.Done()
 		lock.Lock()
 		defer lock.Unlock()
-		chatData := c.getBot(bot["node"].(map[string]interface{})["displayName"].(string))
+		chatData := c.getBot(bot["node"].(map[string]interface{})["handle"].(string))
 		if chatData !=  nil {
 			bots[chatData["defaultBotObject"].(map[string]interface{})["nickname"].(string)] = chatData	
 		} 
